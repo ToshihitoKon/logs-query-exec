@@ -2,5 +2,6 @@ temporary_directory: "/tmp"
 retry:
   max_count: 5
 aws:
-  s3_bucket: "your_s3_bucket_with_no_s3://_prefix"
+  s3_bucket: "your_s3_bucket_name"
   s3_object_key_prefix: "logs-query-exec"
+sample_request_json: "sample_request.json"

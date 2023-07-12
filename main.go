@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"reflect"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -23,17 +24,41 @@ type LogsQueryExecRequest struct {
 	Limit         *int32   `json:"limit"`
 }
 
-func (req *LogsQueryExecRequest) Validate() error {
-	log.Printf("%#v\n", req)
-	if len(req.LogGroupNames) < 1 {
-		return fmt.Errorf("Bad Request")
+func (req *LogsQueryExecRequest) Validate() []error {
+	errors := []error{}
+	if err := checkEmpty(req.LogGroupNames, "log_group_name"); err != nil {
+		errors = append(errors, err)
+	}
+	if err := checkEmpty(req.QueryString, "query_string"); err != nil {
+		errors = append(errors, err)
+	}
+	if err := checkEmpty(req.StartTime, "start_time"); err != nil {
+		errors = append(errors, err)
+	}
+	if err := checkEmpty(req.EndTime, "end_time"); err != nil {
+		errors = append(errors, err)
+	}
+	if err := checkEmpty(req.Limit, "limit"); err != nil {
+		errors = append(errors, err)
 	}
 
-	if req.QueryString == nil ||
-		req.StartTime == nil ||
-		req.EndTime == nil ||
-		req.Limit == nil {
-		return fmt.Errorf("Bad Request")
+	return errors
+}
+
+func checkEmpty(v any, varName string) error {
+	log.Println(v)
+	err := fmt.Errorf("%s is required", varName)
+	val := reflect.ValueOf(v)
+
+	switch val.Kind() {
+	case reflect.Pointer:
+		if v == nil || val.IsNil() {
+			return err
+		}
+	case reflect.Slice, reflect.Array, reflect.Map:
+		if val.Len() < 1 {
+			return err
+		}
 	}
 
 	return nil
@@ -49,24 +74,18 @@ func main() {
 		log.Fatal(err)
 	}
 
+	handler := getLambdaHandler(cli)
 	onLambda := strings.HasPrefix(os.Getenv("AWS_EXECUTION_ENV"), "AWS_Lambda_") || os.Getenv("AWS_LAMBDA_RUNTIME_API") != ""
 	if onLambda {
-		handler := getLambdaHandler(cli)
 		lambda.Start(handler)
 	} else {
-		fmt.Println("Execute from outside Lambda")
-		// handler := getOutsideLambdaHandler(cli)
-		// if err := handler(); err != nil {
-		// 	log.Fatal(err)
-		// }
+		fmt.Fprintf(os.Stderr, "Execute from outside Lambda. Load sample request from file %s\n", lqeConfig.SampleRequestJson)
 
-		// json読んでlambdaHandlerをテストする
-		payload, err := loadLambdaPayloadSample()
+		payload, err := loadLambdaPayloadSample(lqeConfig.SampleRequestJson)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		handler := getLambdaHandler(cli)
 		result, err := handler(ctx, payload)
 		if err != nil {
 			log.Fatal(err)
@@ -76,8 +95,8 @@ func main() {
 	}
 }
 
-func loadLambdaPayloadSample() (*events.APIGatewayV2HTTPRequest, error) {
-	f, err := os.Open("sample_request.json")
+func loadLambdaPayloadSample(filePath string) (*events.APIGatewayV2HTTPRequest, error) {
+	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -103,8 +122,11 @@ func getLambdaHandler(cli *Client) func(context.Context, *events.APIGatewayV2HTT
 		if err := json.Unmarshal([]byte(event.Body), req); err != nil {
 			return "", err
 		}
-		if err := req.Validate(); err != nil {
-			return "", err
+		if errors := req.Validate(); len(errors) != 0 {
+			for _, v := range errors {
+				fmt.Fprintln(os.Stderr, v.Error())
+			}
+			return "Bad Request", nil
 		}
 
 		queryId, result, err := cli.runQuery(ctx, req)

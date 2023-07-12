@@ -20,12 +20,19 @@ type Config struct {
 		S3Bucket          string `yaml:"s3_bucket"`
 		S3ObjectKeyPrefix string `yaml:"s3_object_key_prefix"`
 	} `yaml:"aws"`
+
+	SampleRequestJson string `yaml:"sample_request_json"`
 }
 
-var config = &Config{}
+var lqeConfig = &Config{}
 
 func init() {
-	f, err := os.Open("config.yaml")
+	configFile := os.Getenv("LQE_CONFIG")
+	if configFile == "" {
+		configFile = "config.yaml"
+	}
+
+	f, err := os.Open(configFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,7 +42,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	if err := yaml.Unmarshal(confData, conf); err != nil {
+	if err := yaml.Unmarshal(confData, lqeConfig); err != nil {
 		log.Fatal(err)
 	}
 }

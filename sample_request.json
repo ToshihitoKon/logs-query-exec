@@ -1,5 +1,5 @@
 {
-    "body": "{\"query_string\":\"field @timestamp | limit 10\", \"start_time\":1688973991, \"end_time\":1688975786, \"limit\":100, \"LogGroupNames\":[\"/logGroup\"]}",
+    "body": "{\"query_string\":\"field @timestamp | limit 10\", \"start_time\":1688973991, \"end_time\":1688975786, \"limit\":100, \"log_group_names\":[\"/logGroup\"]}",
 
     "version": "2.0",
     "routeKey": "$default",
