@@ -12,9 +12,14 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 )
+
+// 関数URLで叩いた場合は API Gateway V2 のペイロードに従うので、互換がある形にする
+// ref: https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/urls-invocation.html
+type RequestEvent struct {
+	Body string `json:"body"`
+}
 
 type LogsQueryExecRequest struct {
 	LogGroupNames []string `json:"log_group_names"`
@@ -95,7 +100,7 @@ func main() {
 	}
 }
 
-func loadLambdaPayloadSample(filePath string) (*events.APIGatewayV2HTTPRequest, error) {
+func loadLambdaPayloadSample(filePath string) (*RequestEvent, error) {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -106,7 +111,7 @@ func loadLambdaPayloadSample(filePath string) (*events.APIGatewayV2HTTPRequest, 
 		return nil, err
 	}
 
-	req := &events.APIGatewayV2HTTPRequest{}
+	req := &RequestEvent{}
 	if err := json.Unmarshal(data, req); err != nil {
 		return nil, err
 	}
@@ -114,10 +119,8 @@ func loadLambdaPayloadSample(filePath string) (*events.APIGatewayV2HTTPRequest, 
 	return req, nil
 }
 
-// 関数URLで叩いた場合は API Gateway V2 のペイロードに従う
-// ref: https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/urls-invocation.html
-func getLambdaHandler(cli *Client) func(context.Context, *events.APIGatewayV2HTTPRequest) (string, error) {
-	return func(ctx context.Context, event *events.APIGatewayV2HTTPRequest) (string, error) {
+func getLambdaHandler(cli *Client) func(context.Context, *RequestEvent) (string, error) {
+	return func(ctx context.Context, event *RequestEvent) (string, error) {
 		req := &LogsQueryExecRequest{}
 		if err := json.Unmarshal([]byte(event.Body), req); err != nil {
 			return "", err
