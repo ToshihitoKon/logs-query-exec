@@ -9,5 +9,5 @@ builds:
       - amd64
       - arm64
 
-archives:
+archive:
   name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
