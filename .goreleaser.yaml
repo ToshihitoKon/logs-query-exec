@@ -1,7 +1,6 @@
 project_name: logs-query-exec
 builds:
-  - binary: "logs-query-exec_{{ .Target }}"
-    env: [CGO_ENABLED=0]
+  - env: [CGO_ENABLED=0]
     goos:
       - linux
       - windows
@@ -9,3 +8,6 @@ builds:
     goarch:
       - amd64
       - arm64
+
+archives:
+  name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
