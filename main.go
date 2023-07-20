@@ -36,35 +36,41 @@ func main() {
 		response, err := handler(ctx, payload)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
-			fmt.Println(response)
 			os.Exit(1)
 		}
 
-		fmt.Println(response)
+		bytesData, err := json.Marshal(response)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+
+		fmt.Println(string(bytesData))
 	}
 }
 
-func getLambdaHandler(cli *Client) func(context.Context, *RequestEvent) (string, error) {
-	return func(ctx context.Context, event *RequestEvent) (string, error) {
+func getLambdaHandler(cli *Client) func(context.Context, *RequestEvent) (*LogsQueryExecResponse, error) {
+	return func(ctx context.Context, event *RequestEvent) (*LogsQueryExecResponse, error) {
 		req := &LogsQueryExecRequest{}
 		res := &LogsQueryExecResponse{}
 		res.Status = ResponseStatusFailed
 
 		if err := json.Unmarshal([]byte(event.Body), req); err != nil {
-			return res.toMustJson(), err
+			res.Error = fmt.Sprintf("error: json.Unmarshal request body. %s", err.Error())
+			return res, err
 		}
 		if errors := req.Validate(); len(errors) != 0 {
 			for _, v := range errors {
 				fmt.Fprintln(os.Stderr, v.Error())
 			}
 			res.Error = fmt.Sprintf("Bad Request")
-			return res.toMustJson(), fmt.Errorf("Bad Request")
+			return res, fmt.Errorf("Bad Request")
 		}
 
 		queryId, result, err := cli.runQuery(ctx, req)
 		if err != nil {
 			res.Error = fmt.Sprintf("failed runQuery. %s", err.Error())
-			return res.toMustJson(), err
+			return res, err
 		}
 		res.QueryId = queryId
 
@@ -72,7 +78,7 @@ func getLambdaHandler(cli *Client) func(context.Context, *RequestEvent) (string,
 		f, err := os.Create(filename)
 		if err != nil {
 			res.Error = fmt.Sprintf("error os.Create. %s", err.Error())
-			return res.toMustJson(), err
+			return res, err
 		}
 
 		defer func() {
@@ -82,18 +88,18 @@ func getLambdaHandler(cli *Client) func(context.Context, *RequestEvent) (string,
 
 		if _, err := f.Write(result); err != nil {
 			res.Error = fmt.Sprintf("error file.Write. %s", err.Error())
-			return res.toMustJson(), err
+			return res, err
 		}
 
 		if err := cli.s3Copy(ctx, bytes.NewReader(result), queryId+".json"); err != nil {
 			res.Error = fmt.Sprintf("error upload s3. %s", err.Error())
-			return res.toMustJson(), err
+			return res, err
 		}
 
 		res.FileName = queryId + ".json"
 		res.FilePath = path.Join(lqeConfig.Aws.S3Bucket, lqeConfig.Aws.S3ObjectKeyPrefix, res.FileName)
 		res.Status = ResponseStatusSuccess
 
-		return res.toMustJson(), nil
+		return res, nil
 	}
 }
