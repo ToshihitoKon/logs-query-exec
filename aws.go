@@ -7,6 +7,7 @@ import (
 	"io"
 	"math"
 	"math/rand"
+	"os"
 	"path"
 	"time"
 
@@ -72,15 +73,13 @@ Loop:
 			retryCount++
 			randTime := rand.Intn(500)
 			sleepTime := int64(math.Pow(2, float64(retryCount))*300) + int64(randTime)
-			fmt.Printf("retry...(%d:%d)\n", retryCount, sleepTime)
+			fmt.Fprintf(os.Stderr, "retry...(%d:%d)\n", retryCount, sleepTime)
 			time.Sleep(time.Duration(sleepTime) * time.Millisecond)
 			continue
 		default:
 			return nil, fmt.Errorf("error: GetQueryResults returned sutatus: %s", res.Status)
 		}
 	}
-
-	fmt.Println("GetQueryResult success")
 
 	if res.Status != types.QueryStatusComplete {
 		return nil, fmt.Errorf("error: GetQueryResults returned sutatus: %s", res.Status)

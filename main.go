@@ -5,72 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path"
-	"reflect"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/lambda"
 )
-
-// 関数URLで叩いた場合は API Gateway V2 のペイロードに従うので、互換がある形にする
-// ref: https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/urls-invocation.html
-type RequestEvent struct {
-	Body string `json:"body"`
-}
-
-type LogsQueryExecRequest struct {
-	LogGroupNames []string `json:"log_group_names"`
-	QueryString   *string  `json:"query_string"`
-	StartTime     *int64   `json:"start_time"`
-	EndTime       *int64   `json:"end_time"`
-	Limit         *int32   `json:"limit"`
-}
-
-func (req *LogsQueryExecRequest) Validate() []error {
-	errors := []error{}
-	if err := checkEmpty(req.LogGroupNames, "log_group_name"); err != nil {
-		errors = append(errors, err)
-	}
-	if err := checkEmpty(req.QueryString, "query_string"); err != nil {
-		errors = append(errors, err)
-	}
-	if err := checkEmpty(req.StartTime, "start_time"); err != nil {
-		errors = append(errors, err)
-	}
-	if err := checkEmpty(req.EndTime, "end_time"); err != nil {
-		errors = append(errors, err)
-	}
-	if err := checkEmpty(req.Limit, "limit"); err != nil {
-		errors = append(errors, err)
-	}
-
-	return errors
-}
-
-func checkEmpty(v any, varName string) error {
-	log.Println(v)
-	err := fmt.Errorf("%s is required", varName)
-	val := reflect.ValueOf(v)
-
-	switch val.Kind() {
-	case reflect.Pointer:
-		if v == nil || val.IsNil() {
-			return err
-		}
-	case reflect.Slice, reflect.Array, reflect.Map:
-		if val.Len() < 1 {
-			return err
-		}
-	}
-
-	return nil
-}
-
-type logEntry map[string]string
-type logEntries []logEntry
 
 func main() {
 	ctx := context.Background()
@@ -88,62 +29,51 @@ func main() {
 
 		payload, err := loadLambdaPayloadSample(lqeConfig.SampleRequestJson)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
 		}
 
-		result, err := handler(ctx, payload)
+		response, err := handler(ctx, payload)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Fprintln(os.Stderr, err)
+			fmt.Println(response)
+			os.Exit(1)
 		}
 
-		fmt.Println(result)
+		fmt.Println(response)
 	}
-}
-
-func loadLambdaPayloadSample(filePath string) (*RequestEvent, error) {
-	f, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-
-	data, err := io.ReadAll(f)
-	if err != nil {
-		return nil, err
-	}
-
-	req := &RequestEvent{}
-	if err := json.Unmarshal(data, req); err != nil {
-		return nil, err
-	}
-
-	return req, nil
 }
 
 func getLambdaHandler(cli *Client) func(context.Context, *RequestEvent) (string, error) {
 	return func(ctx context.Context, event *RequestEvent) (string, error) {
 		req := &LogsQueryExecRequest{}
+		res := &LogsQueryExecResponse{}
+		res.Status = ResponseStatusFailed
+
 		if err := json.Unmarshal([]byte(event.Body), req); err != nil {
-			return "", err
+			return res.toMustJson(), err
 		}
 		if errors := req.Validate(); len(errors) != 0 {
 			for _, v := range errors {
 				fmt.Fprintln(os.Stderr, v.Error())
 			}
-			return "Bad Request", nil
+			res.Error = fmt.Sprintf("Bad Request")
+			return res.toMustJson(), fmt.Errorf("Bad Request")
 		}
 
 		queryId, result, err := cli.runQuery(ctx, req)
 		if err != nil {
-			return "", err
+			res.Error = fmt.Sprintf("failed runQuery. %s", err.Error())
+			return res.toMustJson(), err
 		}
-		log.Println("queryId", queryId)
+		res.QueryId = queryId
 
 		filename := path.Join("/tmp", queryId+".json")
 		f, err := os.Create(filename)
 		if err != nil {
-			return "", err
+			res.Error = fmt.Sprintf("error os.Create. %s", err.Error())
+			return res.toMustJson(), err
 		}
-		log.Println("filename", filename)
 
 		defer func() {
 			f.Close()
@@ -151,38 +81,19 @@ func getLambdaHandler(cli *Client) func(context.Context, *RequestEvent) (string,
 		}()
 
 		if _, err := f.Write(result); err != nil {
-			return "", err
+			res.Error = fmt.Sprintf("error file.Write. %s", err.Error())
+			return res.toMustJson(), err
 		}
 
-		log.Println("s3Copy")
 		if err := cli.s3Copy(ctx, bytes.NewReader(result), queryId+".json"); err != nil {
-			return "", err
+			res.Error = fmt.Sprintf("error upload s3. %s", err.Error())
+			return res.toMustJson(), err
 		}
 
-		return queryId + ".json", nil
-	}
-}
+		res.FileName = queryId + ".json"
+		res.FilePath = path.Join(lqeConfig.Aws.S3Bucket, lqeConfig.Aws.S3ObjectKeyPrefix, res.FileName)
+		res.Status = ResponseStatusSuccess
 
-func getOutsideLambdaHandler(cli *Client) func(*LogsQueryExecRequest) error {
-	return func(req *LogsQueryExecRequest) error {
-		ctx := context.Background()
-		queryId, result, err := cli.runQuery(ctx, req)
-		if err != nil {
-			return err
-		}
-
-		f, err := os.Create(path.Join("tmp", "logs-query-exec", queryId+".json"))
-		if err != nil {
-			return err
-		}
-
-		n, err := f.Write(result)
-		if err != nil {
-			return err
-		}
-
-		fmt.Printf("saved %d bytes in %s", n, f.Name())
-
-		return nil
+		return res.toMustJson(), nil
 	}
 }
