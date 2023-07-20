@@ -36,6 +36,7 @@ func main() {
 		response, err := handler(ctx, payload)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
+			fmt.Printf("%+v", response)
 			os.Exit(1)
 		}
 
@@ -55,7 +56,14 @@ func getLambdaHandler(cli *Client) func(context.Context, *RequestEvent) (*LogsQu
 		res := &LogsQueryExecResponse{}
 		res.Status = ResponseStatusFailed
 
-		if err := json.Unmarshal([]byte(event.Body), req); err != nil {
+		log.Println(event.Body)
+		body, err := event.getBody()
+		if err != nil {
+			res.Error = fmt.Sprintf("error: get request body. %s", err.Error())
+			return res, err
+		}
+
+		if err := json.Unmarshal([]byte(body), req); err != nil {
 			res.Error = fmt.Sprintf("error: json.Unmarshal request body. %s", err.Error())
 			return res, err
 		}

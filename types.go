@@ -1,11 +1,26 @@
 package main
 
-import "encoding/json"
+import (
+	"encoding/base64"
+	"encoding/json"
+)
 
 // 関数URLで叩いた場合は API Gateway V2 のペイロードに従うので、互換がある形にする
 // ref: https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/urls-invocation.html
 type RequestEvent struct {
-	Body string `json:"body"`
+	Body            string `json:"body"`
+	IsBase64Encoded bool   `json:"isBase64Encoded"`
+}
+
+func (r *RequestEvent) getBody() (string, error) {
+	if r.IsBase64Encoded {
+		decoded, err := base64.StdEncoding.DecodeString(r.Body)
+		if err != nil {
+			return "", err
+		}
+		return string(decoded), nil
+	}
+	return r.Body, nil
 }
 
 type LogsQueryExecRequest struct {
