@@ -10,12 +10,13 @@ import (
 	"path"
 	"strings"
 
+	lqe "github.com/ToshihitoKon/logs-query-exec/src"
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
 func main() {
 	ctx := context.Background()
-	cli, err := NewClient(ctx)
+	cli, err := lqe.NewClient(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -25,9 +26,9 @@ func main() {
 	if onLambda {
 		lambda.Start(handler)
 	} else {
-		fmt.Fprintf(os.Stderr, "Execute from outside Lambda. Load sample request from file %s\n", lqeConfig.SampleRequestJson)
+		fmt.Fprintf(os.Stderr, "Execute from outside Lambda. Load sample request from file %s\n", lqe.LqeConfig.SampleRequestJson)
 
-		payload, err := loadLambdaPayloadSample(lqeConfig.SampleRequestJson)
+		payload, err := lqe.LoadLambdaPayloadSample(lqe.LqeConfig.SampleRequestJson)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -50,14 +51,14 @@ func main() {
 	}
 }
 
-func getLambdaHandler(cli *Client) func(context.Context, *RequestEvent) (*LogsQueryExecResponse, error) {
-	return func(ctx context.Context, event *RequestEvent) (*LogsQueryExecResponse, error) {
-		req := &LogsQueryExecRequest{}
-		res := &LogsQueryExecResponse{}
-		res.Status = ResponseStatusFailed
+func getLambdaHandler(cli *lqe.Client) func(context.Context, *lqe.RequestEvent) (*lqe.LogsQueryExecResponse, error) {
+	return func(ctx context.Context, event *lqe.RequestEvent) (*lqe.LogsQueryExecResponse, error) {
+		req := &lqe.LogsQueryExecRequest{}
+		res := &lqe.LogsQueryExecResponse{}
+		res.Status = lqe.ResponseStatusFailed
 
 		log.Println(event.Body)
-		body, err := event.getBody()
+		body, err := event.GetBody()
 		if err != nil {
 			res.Error = fmt.Sprintf("error: get request body. %s", err.Error())
 			return res, err
@@ -75,7 +76,7 @@ func getLambdaHandler(cli *Client) func(context.Context, *RequestEvent) (*LogsQu
 			return res, fmt.Errorf("Bad Request")
 		}
 
-		queryId, result, err := cli.runQuery(ctx, req)
+		queryId, result, err := cli.RunQuery(ctx, req)
 		if err != nil {
 			res.Error = fmt.Sprintf("failed runQuery. %s", err.Error())
 			return res, err
@@ -99,14 +100,14 @@ func getLambdaHandler(cli *Client) func(context.Context, *RequestEvent) (*LogsQu
 			return res, err
 		}
 
-		if err := cli.s3Copy(ctx, bytes.NewReader(result), queryId+".json"); err != nil {
+		if err := cli.S3Copy(ctx, bytes.NewReader(result), queryId+".json"); err != nil {
 			res.Error = fmt.Sprintf("error upload s3. %s", err.Error())
 			return res, err
 		}
 
 		res.FileName = queryId + ".json"
-		res.FilePath = path.Join(lqeConfig.Aws.S3Bucket, lqeConfig.Aws.S3ObjectKeyPrefix, res.FileName)
-		res.Status = ResponseStatusSuccess
+		res.FilePath = path.Join(lqe.LqeConfig.Aws.S3Bucket, lqe.LqeConfig.Aws.S3ObjectKeyPrefix, res.FileName)
+		res.Status = lqe.ResponseStatusSuccess
 
 		return res, nil
 	}

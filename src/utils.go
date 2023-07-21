@@ -1,4 +1,4 @@
-package main
+package logsQueryExec
 
 import (
 	"encoding/json"
@@ -26,7 +26,7 @@ func checkEmpty(v any, varName string) error {
 	return nil
 }
 
-func loadLambdaPayloadSample(filePath string) (*RequestEvent, error) {
+func LoadLambdaPayloadSample(filePath string) (*RequestEvent, error) {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, err

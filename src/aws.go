@@ -1,4 +1,4 @@
-package main
+package logsQueryExec
 
 import (
 	"context"
@@ -96,7 +96,7 @@ Loop:
 	return entries, nil
 }
 
-func (cli *Client) runQuery(ctx context.Context, req *LogsQueryExecRequest) (string, []byte, error) {
+func (cli *Client) RunQuery(ctx context.Context, req *LogsQueryExecRequest) (string, []byte, error) {
 	queryId, err := cli.cwlQueryStart(ctx, req)
 	if err != nil {
 		return "", nil, err
@@ -119,9 +119,9 @@ func (cli *Client) runQuery(ctx context.Context, req *LogsQueryExecRequest) (str
 	return queryId, jsonResByte, nil
 }
 
-func (cli *Client) s3Copy(ctx context.Context, body io.Reader, dest string) error {
-	bucket := lqeConfig.Aws.S3Bucket
-	prefix := lqeConfig.Aws.S3ObjectKeyPrefix
+func (cli *Client) S3Copy(ctx context.Context, body io.Reader, dest string) error {
+	bucket := LqeConfig.Aws.S3Bucket
+	prefix := LqeConfig.Aws.S3ObjectKeyPrefix
 	key := path.Join(prefix, dest)
 
 	_, err := cli.S3Client.PutObject(ctx, &s3.PutObjectInput{

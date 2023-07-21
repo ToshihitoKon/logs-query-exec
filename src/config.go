@@ -1,4 +1,4 @@
-package main
+package logsQueryExec
 
 import (
 	"io"
@@ -24,7 +24,7 @@ type Config struct {
 	SampleRequestJson string `yaml:"sample_request_json"`
 }
 
-var lqeConfig = &Config{}
+var LqeConfig = &Config{}
 
 func init() {
 	configFile := os.Getenv("LQE_CONFIG")
@@ -42,7 +42,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	if err := yaml.Unmarshal(confData, lqeConfig); err != nil {
+	if err := yaml.Unmarshal(confData, LqeConfig); err != nil {
 		log.Fatal(err)
 	}
 }

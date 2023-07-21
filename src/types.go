@@ -1,8 +1,7 @@
-package main
+package logsQueryExec
 
 import (
 	"encoding/base64"
-	"encoding/json"
 )
 
 // 関数URLで叩いた場合は API Gateway V2 のペイロードに従うので、互換がある形にする
@@ -12,7 +11,7 @@ type RequestEvent struct {
 	IsBase64Encoded bool   `json:"isBase64Encoded"`
 }
 
-func (r *RequestEvent) getBody() (string, error) {
+func (r *RequestEvent) GetBody() (string, error) {
 	if r.IsBase64Encoded {
 		decoded, err := base64.StdEncoding.DecodeString(r.Body)
 		if err != nil {
@@ -58,15 +57,6 @@ type LogsQueryExecResponse struct {
 	FileName string `json:"file_name"`
 	FilePath string `json:"file_path"`
 	Error    string `json:"error"`
-}
-
-// json.Marshalに失敗しても必ずjson stringを返す
-func (res *LogsQueryExecResponse) toMustJson() string {
-	bytesData, err := json.Marshal(res)
-	if err != nil {
-		return res.constantFailedJson()
-	}
-	return string(bytesData)
 }
 
 func (res *LogsQueryExecResponse) constantFailedJson() string {

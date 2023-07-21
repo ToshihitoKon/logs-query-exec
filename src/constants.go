@@ -1,4 +1,4 @@
-package main
+package logsQueryExec
 
 const (
 	ResponseStatusSuccess = "success"
