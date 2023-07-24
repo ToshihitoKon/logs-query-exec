@@ -2,6 +2,7 @@ package logsQueryExec
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -40,9 +41,15 @@ func NewClient(ctx context.Context) (*Client, error) {
 }
 
 func (cli *Client) cwlQueryStart(ctx context.Context, req *LogsQueryExecRequest) (string, error) {
+	queryData, err := base64.StdEncoding.DecodeString(*req.EncodedQueryString)
+	if err != nil {
+		return "", err
+	}
+	queryStr := string(queryData)
+
 	params := &cwl.StartQueryInput{
 		LogGroupNames: req.LogGroupNames,
-		QueryString:   req.QueryString,
+		QueryString:   &queryStr,
 		StartTime:     req.StartTime,
 		EndTime:       req.EndTime,
 		Limit:         req.Limit,

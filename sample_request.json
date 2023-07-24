@@ -1,5 +1,6 @@
 {
-    "body": "{\"query_string\":\"field @timestamp | limit 10\", \"start_time\":1688973991, \"end_time\":1688975786, \"limit\":100, \"log_group_names\":[\"/logGroup\"]}",
+    "body": "eyJsb2dfZ3JvdXBfbmFtZXMiOlsiL2xvZ0dyb3VwcyJdLCJlbmNvZGVkX3F1ZXJ5X3N0cmluZyI6IlptbGxiR1FnUUhScGJXVnpkR0Z0Y0FwOElHeHBiV2wwSURFd0NnPT0iLCJzdGFydF90aW1lIjoxNjkwMTg2MDI1LCJlbmRfdGltZSI6MTY5MDE4NzgyNSwibGltaXQiOjEwMH0=",
+    "isBase64Encoded": true,
 
     "version": "2.0",
     "routeKey": "$default",
@@ -48,6 +49,5 @@
         "timeEpoch": 1583348638390
     },
     "pathParameters": null,
-    "isBase64Encoded": false,
     "stageVariables": null
 }

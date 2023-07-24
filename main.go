@@ -68,6 +68,7 @@ func getLambdaHandler(cli *lqe.Client, conf *lqe.Config) func(context.Context, *
 			res.Error = fmt.Sprintf("error: get request body. %s", err.Error())
 			return res, err
 		}
+		log.Println(body)
 
 		if err := json.Unmarshal([]byte(body), req); err != nil {
 			res.Error = fmt.Sprintf("error: json.Unmarshal request body. %s", err.Error())

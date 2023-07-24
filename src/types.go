@@ -23,11 +23,11 @@ func (r *RequestEvent) GetBody() (string, error) {
 }
 
 type LogsQueryExecRequest struct {
-	LogGroupNames []string `json:"log_group_names"`
-	QueryString   *string  `json:"query_string"`
-	StartTime     *int64   `json:"start_time"`
-	EndTime       *int64   `json:"end_time"`
-	Limit         *int32   `json:"limit"`
+	LogGroupNames      []string `json:"log_group_names"`
+	EncodedQueryString *string  `json:"encoded_query_string"`
+	StartTime          *int64   `json:"start_time"`
+	EndTime            *int64   `json:"end_time"`
+	Limit              *int32   `json:"limit"`
 }
 
 func (req *LogsQueryExecRequest) Validate() []error {
@@ -35,7 +35,7 @@ func (req *LogsQueryExecRequest) Validate() []error {
 	if err := checkEmpty(req.LogGroupNames, "log_group_name"); err != nil {
 		errors = append(errors, err)
 	}
-	if err := checkEmpty(req.QueryString, "query_string"); err != nil {
+	if err := checkEmpty(req.EncodedQueryString, "encoded_query_string"); err != nil {
 		errors = append(errors, err)
 	}
 	if err := checkEmpty(req.StartTime, "start_time"); err != nil {
