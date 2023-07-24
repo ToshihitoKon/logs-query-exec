@@ -101,10 +101,24 @@ func main() {
 		EncodedQueryString: &encodedQueryStr,
 	}
 
-	data, err := json.Marshal(req)
+	reqData, err := json.Marshal(req)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
-	fmt.Fprintf(outFile, string(data))
+
+	encodedReqStr := base64.StdEncoding.EncodeToString(reqData)
+
+	reqEvent := &lqe.RequestEvent{
+		Body:            encodedReqStr,
+		IsBase64Encoded: true,
+	}
+
+	reqEventData, err := json.Marshal(reqEvent)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+
+	fmt.Fprintf(outFile, string(reqEventData))
 }
