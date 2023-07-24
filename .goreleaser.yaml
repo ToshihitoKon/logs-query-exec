@@ -1,6 +1,18 @@
 project_name: logs-query-exec
 builds:
-  - env: [CGO_ENABLED=0]
+  - dir: .
+    binary: logs-query-exec
+    env: [CGO_ENABLED=0]
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+  - dir: ./cmd/logs-query-exec-request
+    binary: logs-query-exec-request
+    env: [CGO_ENABLED=0]
     goos:
       - linux
       - windows
