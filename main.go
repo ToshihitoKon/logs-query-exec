@@ -21,14 +21,19 @@ func main() {
 		log.Fatal(err)
 	}
 
-	handler := getLambdaHandler(cli)
+	conf, err := lqe.NewConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	handler := getLambdaHandler(cli, conf)
 	onLambda := strings.HasPrefix(os.Getenv("AWS_EXECUTION_ENV"), "AWS_Lambda_") || os.Getenv("AWS_LAMBDA_RUNTIME_API") != ""
 	if onLambda {
 		lambda.Start(handler)
 	} else {
-		fmt.Fprintf(os.Stderr, "Execute from outside Lambda. Load sample request from file %s\n", lqe.LqeConfig.SampleRequestJson)
+		fmt.Fprintf(os.Stderr, "Execute from outside Lambda. Load sample request from file %s\n", conf.SampleRequestJson)
 
-		payload, err := lqe.LoadLambdaPayloadSample(lqe.LqeConfig.SampleRequestJson)
+		payload, err := lqe.LoadLambdaPayloadSample(conf.SampleRequestJson)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -51,7 +56,7 @@ func main() {
 	}
 }
 
-func getLambdaHandler(cli *lqe.Client) func(context.Context, *lqe.RequestEvent) (*lqe.LogsQueryExecResponse, error) {
+func getLambdaHandler(cli *lqe.Client, conf *lqe.Config) func(context.Context, *lqe.RequestEvent) (*lqe.LogsQueryExecResponse, error) {
 	return func(ctx context.Context, event *lqe.RequestEvent) (*lqe.LogsQueryExecResponse, error) {
 		req := &lqe.LogsQueryExecRequest{}
 		res := &lqe.LogsQueryExecResponse{}
@@ -100,13 +105,13 @@ func getLambdaHandler(cli *lqe.Client) func(context.Context, *lqe.RequestEvent) 
 			return res, err
 		}
 
-		if err := cli.S3Copy(ctx, bytes.NewReader(result), queryId+".json"); err != nil {
+		if err := cli.S3Copy(ctx, conf, bytes.NewReader(result), queryId+".json"); err != nil {
 			res.Error = fmt.Sprintf("error upload s3. %s", err.Error())
 			return res, err
 		}
 
 		res.FileName = queryId + ".json"
-		res.FilePath = path.Join(lqe.LqeConfig.Aws.S3Bucket, lqe.LqeConfig.Aws.S3ObjectKeyPrefix, res.FileName)
+		res.FilePath = path.Join(conf.Aws.S3Bucket, conf.Aws.S3ObjectKeyPrefix, res.FileName)
 		res.Status = lqe.ResponseStatusSuccess
 
 		return res, nil

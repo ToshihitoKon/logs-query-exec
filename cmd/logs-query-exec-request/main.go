@@ -5,16 +5,9 @@ import (
 	"fmt"
 	"os"
 
+	lqe "github.com/ToshihitoKon/logs-query-exec/src"
 	"github.com/spf13/pflag"
 )
-
-type LogsQueryExecRequest struct {
-	LogGroupNames []string `json:"log_group_names"`
-	QueryString   *string  `json:"query_string"`
-	StartTime     *int64   `json:"start_time"`
-	EndTime       *int64   `json:"end_time"`
-	Limit         *int32   `json:"limit"`
-}
 
 func main() {
 	var optStartTime = pflag.Int64("start", -1, "start time (unix timestamp)")
@@ -44,7 +37,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	req := &LogsQueryExecRequest{
+	req := &lqe.LogsQueryExecRequest{
 		StartTime: optStartTime,
 		EndTime:   optEndTime,
 		Limit:     optLimit,

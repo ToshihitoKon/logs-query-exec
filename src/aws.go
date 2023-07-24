@@ -119,9 +119,9 @@ func (cli *Client) RunQuery(ctx context.Context, req *LogsQueryExecRequest) (str
 	return queryId, jsonResByte, nil
 }
 
-func (cli *Client) S3Copy(ctx context.Context, body io.Reader, dest string) error {
-	bucket := LqeConfig.Aws.S3Bucket
-	prefix := LqeConfig.Aws.S3ObjectKeyPrefix
+func (cli *Client) S3Copy(ctx context.Context, config *Config, body io.Reader, dest string) error {
+	bucket := config.Aws.S3Bucket
+	prefix := config.Aws.S3ObjectKeyPrefix
 	key := path.Join(prefix, dest)
 
 	_, err := cli.S3Client.PutObject(ctx, &s3.PutObjectInput{

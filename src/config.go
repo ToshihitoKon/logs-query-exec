@@ -2,7 +2,6 @@ package logsQueryExec
 
 import (
 	"io"
-	"log"
 	"os"
 
 	"gopkg.in/yaml.v2"
@@ -24,9 +23,9 @@ type Config struct {
 	SampleRequestJson string `yaml:"sample_request_json"`
 }
 
-var LqeConfig = &Config{}
+func NewConfig() (*Config, error) {
+	conf := &Config{}
 
-func init() {
 	configFile := os.Getenv("LQE_CONFIG")
 	if configFile == "" {
 		configFile = "config.yaml"
@@ -34,15 +33,16 @@ func init() {
 
 	f, err := os.Open(configFile)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	confData, err := io.ReadAll(f)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	if err := yaml.Unmarshal(confData, LqeConfig); err != nil {
-		log.Fatal(err)
+	if err := yaml.Unmarshal(confData, conf); err != nil {
+		return nil, err
 	}
+	return conf, nil
 }
