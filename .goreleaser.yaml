@@ -2,6 +2,7 @@ project_name: logs-query-exec
 builds:
   - dir: .
     id: logs-query-exec
+    binary: logs-query-exec
     env: [CGO_ENABLED=0]
     goos:
       - linux
@@ -12,6 +13,7 @@ builds:
       - arm64
   - dir: ./cmd/logs-query-exec-request
     id: logs-query-exec-request
+    binary: logs-query-exec-request
     env: [CGO_ENABLED=0]
     goos:
       - linux
