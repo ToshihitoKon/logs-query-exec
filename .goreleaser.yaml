@@ -24,4 +24,11 @@ builds:
       - arm64
 
 archives:
-  - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+  - id: logs-query-exec
+    builds:
+      - logs-query-exec
+    name_template: "{{ .Binary }}_{{ .Os }}_{{ .Arch }}"
+  - id: logs-query-exec-request
+    builds:
+      - logs-query-exec-request
+    name_template: "{{ .Binary }}_{{ .Os }}_{{ .Arch }}"
