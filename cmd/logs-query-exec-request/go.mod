@@ -2,10 +2,8 @@ module github.com/ToshihitoKon/logs-query-exec/cmd/logs-query-exec-request
 
 go 1.20
 
-replace github.com/ToshihitoKon/logs-query-exec => ../../
-
 require (
-	github.com/ToshihitoKon/logs-query-exec v0.0.0-00010101000000-000000000000
+	github.com/ToshihitoKon/logs-query-exec v0.2.6
 	github.com/spf13/pflag v1.0.5
 )
 
@@ -29,6 +27,5 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.14.12 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.19.2 // indirect
 	github.com/aws/smithy-go v1.13.5 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 )
