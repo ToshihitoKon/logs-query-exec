@@ -8,7 +8,8 @@ import (
 	"reflect"
 )
 
-func checkEmpty(v any, varName string) error {
+// mustNotEmpty: 渡されたポインタの参照している値がnilや空配列であればerrorを返す
+func mustNotEmpty(v any, varName string) error {
 	err := fmt.Errorf("%s is required", varName)
 	val := reflect.ValueOf(v)
 

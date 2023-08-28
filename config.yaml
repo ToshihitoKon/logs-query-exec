@@ -4,4 +4,4 @@ retry:
 aws:
   s3_bucket: "your_s3_bucket_name"
   s3_object_key_prefix: "logs-query-exec"
-sample_request_json: "sample_request.json"
+sample_request_json: "sample-request.json"

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -74,6 +75,7 @@ func getLambdaHandler(cli *lqe.Client, conf *lqe.Config) func(context.Context, *
 			res.Error = fmt.Sprintf("error: json.Unmarshal request body. %s", err.Error())
 			return res, err
 		}
+		log.Printf("%#v", req)
 		if errors := req.Validate(); len(errors) != 0 {
 			for _, v := range errors {
 				fmt.Fprintln(os.Stderr, v.Error())
@@ -82,12 +84,16 @@ func getLambdaHandler(cli *lqe.Client, conf *lqe.Config) func(context.Context, *
 			return res, fmt.Errorf("Bad Request")
 		}
 
-		queryId, result, err := cli.RunQuery(ctx, req)
+		queryId, result, err := cli.RunQuery(ctx, conf, req)
+		res.QueryId = queryId
 		if err != nil {
+			if errors.Is(err, lqe.ErrorEnableRetry) {
+				res.EnableRetry = true
+				return res, nil
+			}
 			res.Error = fmt.Sprintf("failed runQuery. %s", err.Error())
 			return res, err
 		}
-		res.QueryId = queryId
 
 		filename := path.Join("/tmp", queryId+".json")
 		f, err := os.Create(filename)

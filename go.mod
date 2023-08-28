@@ -27,4 +27,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.14.12 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.19.2 // indirect
 	github.com/aws/smithy-go v1.13.5 // indirect
+	github.com/shogo82148/go-retry v1.1.1 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 )
